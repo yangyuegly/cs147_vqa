@@ -2,11 +2,10 @@ import json
 import cv2
 import numpy as np
 import os
-from tf.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.layers import Flatten
 import tensorflow as tf
-from tf.keras.applications.vgg19 import VGG19
-from keras.applications.vgg19 import preprocess_input
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 BATCH_SIZE = 128
 
 
@@ -74,8 +73,21 @@ def save_image(features):
     image_features = open('weights_features/image_features.txt')
     image_features.write(features)
 
+def extract_question_features(model, questions):
+    num_questions = len(questions)
+    batch_feat_list = []
+
+    # Batching
+    for i in range(0, num_questions, BATCH_SIZE):
+        question_batch = questions[i:(i+BATCH_SIZE)]
+        batch_features = model.call(question_batch)
+        batch_feat_list.append(batch_features)
+    
+    question_features = np.concatenate(np.array(batch_feat_list), axis=0)
+    return question_features
 
 if __name__ == "__main__":
     fpath_anno = "./data/mscoco_train2014_annotations.json"
     fpath_q_mc = "./data/MultipleChoice_mscoco_train2014_questions.json"
-    load_text(fpath_anno, fpath_q_mc)
+    annotations, questions_mc = load_text(fpath_anno, fpath_q_mc)
+    questions_text_mc = [x['question'] for x in questions_mc]
