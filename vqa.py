@@ -147,7 +147,7 @@ def run(img_flag):
 
     fpath_test_anno = "../data/annotations/mscoco_test2014_annotations.json"
     fpath_test_q_mc = "../data/questions/MultipleChoice_mscoco_test2014_questions.json"
-    fpath_test_img_dir = "../data/test2014/"
+    fpath_test_img_dir = "../data/test2015/"
 
     # annotations_mc, questions_mc = preprocess.load_text(fpath_anno, fpath_q_mc)
     questions_train, labels_train, img_features_train = preprocess(fpath_train_anno,fpath_train_q_mc,img_flag,vocab,dir_path_image=fpath_train_img_dir,category=0) 
