@@ -161,9 +161,7 @@ def run(img_flag):
     # loaded_model = tf.keras.models.load_model('/tmp/model')
     print("Saved model to disk")
     
-    # later...
-    
-    test =
+    # TODO: use validation as test + run & debug
 
 
 if __name__ == '__main__':
