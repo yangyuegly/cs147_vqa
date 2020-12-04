@@ -35,8 +35,6 @@ def load_text(fpath_anno, fpath_q_mc, vocab):
     questions = []
     questions_dict = {}
 
-   
-
     # Obtain list of labels
     for question in annotations:
         image_id_list.append(question["image_id"])
