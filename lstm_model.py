@@ -12,7 +12,7 @@ class LSTMmodel(tf.keras.Model):
         self.embedding_size = 300
         self.lstm_hidden = LSTM(self.rnn_size, return_sequence=True, return_state=True)
         self.lstm = LSTM(self.rnn_size, return_state=True)
-        self.dense = Dense(self.num_output, activation='tanh')
+        self.text_dense = Dense(self.num_output, activation='tanh')
     
     def call(self, batched_questions):
         '''
