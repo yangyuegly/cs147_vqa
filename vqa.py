@@ -1,10 +1,12 @@
-from preprocess import preprocess
+from preprocess import preprocess, build_answer_vocab
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import LSTM, Dense
 import spacy
-from keras.models import model_from_yaml
+from tensorflow.keras.models import model_from_yaml
 import argparse
+import json
+from matplotlib import pyplot as plt
 
 
 class VQA(tf.keras.Model):
@@ -153,11 +155,11 @@ def run(img_flag):
     
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
-    losses = train(vqa_mc, img_features, questions, labels)
-    test(model, img_inputs, ques_inputs, labels)
+    losses = train(vqa_mc, img_features_train, questions_train, labels_train)
+    test(vqa_mc, img_features_test, questions_test, labels_test)
 
     # Save Model
-    model.save('./model')
+    vqa_mc.save('./model')
     # loaded_model = tf.keras.models.load_model('/tmp/model')
     print("Saved model to disk")
     
