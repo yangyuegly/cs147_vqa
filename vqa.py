@@ -86,7 +86,7 @@ def train(model, img_feats, ques_inputs, labels):
     # Shuffling
     indices =  [i for i in range(len(ques_inputs))]
     indices = tf.random.shuffle(indices)
-    img_feats = tf.gather(img_feats, indices)
+    img_feats = tf.gather(img_feats, indices, axis=0)
     shuffled_questions = []
     shuffled_labels = []
     for index in indices.numpy():
