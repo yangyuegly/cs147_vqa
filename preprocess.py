@@ -49,8 +49,7 @@ def load_text(fpath_anno, fpath_q_mc, vocab):
     for question in question_id_list:
         questions.append(questions_dict[question])
 
-    vocab_size = len(vocab)
-    return questions, labels, image_id_list, vocab_size
+    return questions, labels, image_id_list
 
 
 def preprocess_img(dir_path, image_id_list, category=None):
@@ -122,8 +121,11 @@ def save_image(features, category):
 
 
 def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, category=None):
+    """
+    Preprocess text and image data. If img_flag ==True
+    """
     print("Preprocessing...")
-    questions, labels, image_id_list, vocab_size = load_text(fpath_anno, fpath_q_mc, vocab)
+    questions, labels, image_id_list = load_text(fpath_anno, fpath_q_mc, vocab)
     if img_flag:
         img_features = preprocess_img(dir_path_image, image_id_list, category=category)
         save_image(img_features, category)
@@ -133,4 +135,4 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
         print("Image features loaded.")
 
     print("Preprocessing complete (๑ `▽´๑)")
-    return questions, labels, vocab_size, img_features
+    return questions, labels, img_features

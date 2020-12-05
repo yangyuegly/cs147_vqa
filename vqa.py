@@ -58,7 +58,7 @@ class VQA(tf.keras.Model):
                     embeddings[i, t, :] = np.reshape(doc[t].vector, [1, self.embedding_size])
         hidden_output, hidden_memory_state, hidden_carry_state = self.lstm_hidden(embeddings, initial_state=None)
         _, final_memory_state, final_carry_state = self.lstm(hidden_output, initial_state=(hidden_memory_state, hidden_carry_state))
-        txt_output = self.txt_ff_layer(tf.concat([final_memory_state, final_carry_state], axis=1))
+        txt_output = self.txt_ff_layer(tf.concat([final_memory_state, final_carry_state], 1))
 
         # Fusing
         fused = tf.multiply(img_output, txt_output)
@@ -68,7 +68,7 @@ class VQA(tf.keras.Model):
 
         return probabilities
         
-    def loss(self, probabilities, labels):
+    def loss_function(self, probabilities, labels):
         """
         Computes the cross-entropy loss given y_true (labels) and y_pred (probabilities)
         :return: the average loss across a batch of inputs
@@ -104,7 +104,7 @@ def train(model, img_feats, ques_inputs, labels):
 
         with tf.GradientTape() as tape:
             probs = model.call(batch_imgs, batch_questions)
-            batch_loss = model.loss(probs, batch_labels)
+            batch_loss = model.loss_function(probs, batch_labels)
         
         gradients = tape.gradient(batch_loss, model.trainable_variables)
         model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -112,7 +112,7 @@ def train(model, img_feats, ques_inputs, labels):
     
     return losses
 
-def test(model, img_inputs, ques_inputs, labels):
+def validate(model, img_inputs, ques_inputs, labels):
     """
     :param img_feats: 2-D tensor of shape [number_images x 4096]
     :param ques_inputs: string of length [number_images]
@@ -120,7 +120,7 @@ def test(model, img_inputs, ques_inputs, labels):
     :returns: loss of the epoch
     """
     probs = model(img_inputs, ques_inputs)
-    loss = model.loss(probs, labels)
+    loss = model.loss_function(probs, labels)
     return loss
 
 def loss_visualization(losses):
@@ -145,25 +145,26 @@ def run(img_flag):
     train_annotations = train_annotations_raw['annotations']
     vocab = build_answer_vocab(train_annotations)
 
-    fpath_test_anno = "../data/annotations/mscoco_test2014_annotations.json"
-    fpath_test_q_mc = "../data/questions/MultipleChoice_mscoco_test2014_questions.json"
-    fpath_test_img_dir = "../data/test2015/"
+    fpath_val_anno = "../data/annotations/mscoco_val2014_annotations.json"
+    fpath_val_q_mc = "../data/questions/MultipleChoice_mscoco_val2014_questions.json"
+    fpath_val_img_dir = "../data/val2014/"
 
     # annotations_mc, questions_mc = preprocess.load_text(fpath_anno, fpath_q_mc)
     questions_train, labels_train, img_features_train = preprocess(fpath_train_anno,fpath_train_q_mc,img_flag,vocab,dir_path_image=fpath_train_img_dir,category=0) 
-    questions_test, labels_test, img_features_test = preprocess(fpath_test_anno,fpath_test_q_mc,img_flag,fpath_test_img_dir,vocab,category=2)    
+    questions_val, labels_val, img_features_val = preprocess(fpath_val_anno,fpath_val_q_mc,img_flag,fpath_val_img_dir,vocab,category=2)    
     
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
     losses = train(vqa_mc, img_features_train, questions_train, labels_train)
-    test(vqa_mc, img_features_test, questions_test, labels_test)
+    validate(vqa_mc, img_features_val, questions_val, labels_val)
+    loss_visualization(losses)
 
     # Save Model
     vqa_mc.save('./model')
     # loaded_model = tf.keras.models.load_model('/tmp/model')
     print("Saved model to disk")
     
-    # TODO: use validation as test + run & debug
+    # TODO: run & debug
 
 
 if __name__ == '__main__':
