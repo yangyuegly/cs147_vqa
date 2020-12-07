@@ -5,7 +5,8 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras import Model
-BATCH_SIZE = 16
+BATCH_SIZE = 5
+SAVING_LENGTH = 5000
 
 
 def build_answer_vocab(annotations):
@@ -78,6 +79,7 @@ def preprocess_img(dir_path, image_id_list, category=None):
     model = Model(inputs=base_model.input,
                   outputs=base_model.get_layer('fc2').output)
 
+    print("Loading images")
     # Load corresponding images according to img_id_list and convert to img array 
     for img_id in image_id_list:
         num_zeros = 12 - len(str(img_id))  # Current id length 
@@ -90,18 +92,20 @@ def preprocess_img(dir_path, image_id_list, category=None):
         img = img_to_array(img)
         images.append(img)
 
-    images = np.vstack(images)  # Shape: (num_images, 224, 224, 3)
-
+    images = np.stack(images)  # Shape: (num_images, 224, 224, 3)
+    print(images.shape)
     num_images = images.shape[0]
     batch_feat_list = []
 
+    print("Extracting image features")
     # Batching
     for i in range(0, num_images, BATCH_SIZE):
-        image_batch = images[i: i + BATCH_SIZE, :, :, :]
+        image_batch = images[i:(i + BATCH_SIZE), :, :, :]
         batch_features = extract_image_features(model, image_batch)
         batch_feat_list.append(batch_features)
 
     img_features = np.concatenate(np.array(batch_feat_list), axis=0)
+    print("Extracting complete")
     return img_features 
 
 
@@ -115,8 +119,8 @@ def extract_image_features(model, images):
     features = model.predict(inputs)  # Shape: (num_images, 4096)
     return features
 
-def save_image(features, category):
-    filename = open('../weights_features/image_features_' + category + '.txt')
+def save_image(features, category, batch):
+    filename = '../weights_features/image_features_' + str(category) + '_' + str(batch) + '.txt'
     np.savetxt(filename, features, fmt='%d')
 
 
@@ -126,13 +130,21 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
     """
     print("Preprocessing...")
     questions, labels, image_id_list = load_text(fpath_anno, fpath_q_mc, vocab)
+    # features = []
     if img_flag:
-        img_features = preprocess_img(dir_path_image, image_id_list, category=category)
-        save_image(img_features, category)
-        print("Image features saved.")
+        iteration = 0
+        for i in range(0, len(image_id_list), SAVING_LENGTH):
+            batch_image_id_list = image_id_list[i:(i+SAVING_LENGTH)]
+            batch_img_features = preprocess_img(dir_path_image, batch_image_id_list, category=category)
+            save_image(batch_img_features, category, iteration)
+            # features.append(batch_img_features)
+            print("Image features saved for iteration ", iteration)
+            iteration += 1
+        img_features = np.zeros((1, 2, 3, 4))
     else:
-        img_features = np.loadtxt('../weights_features/image_features_' + category + '.txt', dtype=np.int32)
+        img_features = np.loadtxt('../weights_features/image_features_' + str(category) + '.txt', dtype=np.int32)
         print("Image features loaded.")
 
+    # img_features = np.vstack(features)
     print("Preprocessing complete (๑ `▽´๑)")
     return questions, labels, img_features
