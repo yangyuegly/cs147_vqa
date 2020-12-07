@@ -163,16 +163,14 @@ def run(img_flag):
     vqa_mc.save('./model')
     # loaded_model = tf.keras.models.load_model('/tmp/model')
     print("Saved model to disk")
-    
-    # TODO: run & debug
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VQA Model")
-    parser.add_argument("-i","--img", help="")
-    args = parser.parse_args()
+    parser.add_argument("-i","--img",action='store_true', help="",default="")
+    args = vars(parser.parse_args())
 
-    if args.i:
+    if args["img"]:
         print("run and store image features")
         run(True)
     else:

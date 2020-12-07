@@ -75,14 +75,15 @@ def preprocess_img(dir_path, image_id_list, category=None):
 
     # Initialize VGG model for feature extraction 
     base_model = VGG19(include_top=True, weights='imagenet')
-    model = Model(input=base_model.input,
-                  output=base_model.get_layer('fc2').output)
+    model = Model(inputs=base_model.input,
+                  outputs=base_model.get_layer('fc2').output)
 
     # Load corresponding images according to img_id_list and convert to img array 
     for img_id in image_id_list:
-        num_zeros = 12 - len(img_id)  # Current id length 
+        num_zeros = 12 - len(str(img_id))  # Current id length 
         zeros = num_zeros * "0" 
-        curr_filename = prefix + zeros + img_id
+        postfix = ".jpg"
+        curr_filename = prefix + zeros + str(img_id) + postfix
         img = load_img(os.path.join(dir_path, curr_filename),
                        color_mode='rgb', target_size=[224, 224])
                     
