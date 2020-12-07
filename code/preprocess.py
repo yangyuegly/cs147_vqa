@@ -145,7 +145,7 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
             print("Image features saved for iteration ", iteration)
             iteration += 1
 
-    for batch in range(20):
+    for batch in range(2):
         curr_file = '../weights_features/image_features_' + \
             str(category) + '_' + str(batch) + '.txt'
         curr_features = np.loadtxt(curr_file, dtype=np.int32)

@@ -22,7 +22,7 @@ class VQA(tf.keras.Model):
         self.merge_hidden_size = 1000
         self.embedding_size = 300
         self.vocab_size = vocab_size
-        self.nlp = spacy.load("en_core_web_sm")
+        self.nlp = spacy.load("en_core_web_md")
         self.learning_rate = 1e-3
         self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
 
@@ -49,20 +49,21 @@ class VQA(tf.keras.Model):
         # Image part
         print("image feats: ", img_feats.shape)
         # L2-normalizing the image tensor TODO: check if axis=1
-        normalized_img_feats = tf.math.l2_normalize(
-            img_feats, axis=1)
-        img_output = self.img_ff_layer(normalized_img_feats)
+        # normalized_img_feats = tf.math.l2_normalize(
+        #     img_feats, axis=1)
+        # print('normalized! this batch')
+        img_output = self.img_ff_layer(img_feats)
 
         # LSTM part
         window_size = max([len(q.split()) for q in ques_inputs])
-        embeddings = np.zeros(
-            (self.batch_size, window_size, self.embedding_size))
-        for i in range(ques_inputs):
+        embeddings = np.random.normal(0, 0.1, size=(self.batch_size, window_size, self.embedding_size))
+        for i in range(len(ques_inputs)):
             doc = self.nlp(ques_inputs[i])
             for t in range(len(doc)):
                 if t < window_size:
                     embeddings[i, t, :] = np.reshape(
                         doc[t].vector, [1, self.embedding_size])
+        embeddings = tf.cast(embeddings, dtype=tf.float32)
         hidden_output, hidden_memory_state, hidden_carry_state = self.lstm_hidden(
             embeddings, initial_state=None)
         _, final_memory_state, final_carry_state = self.lstm(
