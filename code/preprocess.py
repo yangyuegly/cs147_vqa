@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras import Model
-BATCH_SIZE = 128
+BATCH_SIZE = 16
 
 
 def build_answer_vocab(annotations):
@@ -114,7 +114,6 @@ def extract_image_features(model, images):
     inputs = preprocess_input(images)
     features = model.predict(inputs)  # Shape: (num_images, 4096)
     return features
-
 
 def save_image(features, category):
     filename = open('../weights_features/image_features_' + category + '.txt')
