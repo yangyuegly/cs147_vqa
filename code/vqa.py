@@ -49,7 +49,7 @@ class VQA(tf.keras.Model):
         # Image part
         # L2-normalizing the image tensor TODO: check if axis=1
         normalized_img_feats = tf.math.l2_normalize(
-            img_feats, axis=1, epsilon=1e-12, name=None)
+            img_feats, axis=1)
         img_output = self.img_ff_layer(normalized_img_feats)
 
         # LSTM part
