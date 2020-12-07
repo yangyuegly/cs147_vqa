@@ -17,10 +17,11 @@ def build_answer_vocab(annotations):
     all_words = []
     for question in annotations:
         all_words.append(question["multiple_choice_answer"])
-        
+
     all_words = sorted(set(all_words))
     vocab = {word: i for i, word in enumerate(all_words)}
     return vocab
+
 
 def load_text(fpath_anno, fpath_q_mc, vocab):
     with open(fpath_anno, 'r') as f1:
@@ -41,12 +42,12 @@ def load_text(fpath_anno, fpath_q_mc, vocab):
         image_id_list.append(question["image_id"])
         question_id_list.append(question["question_id"])
         labels.append(vocab[question["multiple_choice_answer"]])
-    
+
     # Build question dictionary from json file
     for question in questions_mc:
         questions_dict[question["question_id"]] = question["question"]
-    
-    # Find corresponding question to each question id 
+
+    # Find corresponding question to each question id
     for question in question_id_list:
         questions.append(questions_dict[question])
 
@@ -74,21 +75,21 @@ def preprocess_img(dir_path, image_id_list, category=None):
     else:
         prefix = ""
 
-    # Initialize VGG model for feature extraction 
+    # Initialize VGG model for feature extraction
     base_model = VGG19(include_top=True, weights='imagenet')
     model = Model(inputs=base_model.input,
                   outputs=base_model.get_layer('fc2').output)
 
     print("Loading images")
-    # Load corresponding images according to img_id_list and convert to img array 
+    # Load corresponding images according to img_id_list and convert to img array
     for img_id in image_id_list:
-        num_zeros = 12 - len(str(img_id))  # Current id length 
-        zeros = num_zeros * "0" 
+        num_zeros = 12 - len(str(img_id))  # Current id length
+        zeros = num_zeros * "0"
         postfix = ".jpg"
         curr_filename = prefix + zeros + str(img_id) + postfix
         img = load_img(os.path.join(dir_path, curr_filename),
                        color_mode='rgb', target_size=[224, 224])
-                    
+
         img = img_to_array(img)
         images.append(img)
 
@@ -106,7 +107,7 @@ def preprocess_img(dir_path, image_id_list, category=None):
 
     img_features = np.concatenate(np.array(batch_feat_list), axis=0)
     print("Extracting complete")
-    return img_features 
+    return img_features
 
 
 def extract_image_features(model, images):
@@ -119,8 +120,10 @@ def extract_image_features(model, images):
     features = model.predict(inputs)  # Shape: (num_images, 4096)
     return features
 
+
 def save_image(features, category, batch):
-    filename = '../weights_features/image_features_' + str(category) + '_' + str(batch) + '.txt'
+    filename = '../weights_features/image_features_' + \
+        str(category) + '_' + str(batch) + '.txt'
     np.savetxt(filename, features, fmt='%d')
 
 
@@ -130,21 +133,30 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
     """
     print("Preprocessing...")
     questions, labels, image_id_list = load_text(fpath_anno, fpath_q_mc, vocab)
-    # features = []
+    img_tensor = None
     if img_flag:
         iteration = 0
         for i in range(0, len(image_id_list), SAVING_LENGTH):
             batch_image_id_list = image_id_list[i:(i+SAVING_LENGTH)]
-            batch_img_features = preprocess_img(dir_path_image, batch_image_id_list, category=category)
+            batch_img_features = preprocess_img(
+                dir_path_image, batch_image_id_list, category=category)
             save_image(batch_img_features, category, iteration)
             # features.append(batch_img_features)
             print("Image features saved for iteration ", iteration)
             iteration += 1
-        img_features = np.zeros((1, 2, 3, 4))
-    else:
-        img_features = np.loadtxt('../weights_features/image_features_' + str(category) + '.txt', dtype=np.int32)
-        print("Image features loaded.")
+
+    for batch in range(20):
+        curr_file = '../weights_features/image_features_' + \
+            str(category) + '_' + str(batch) + '.txt'
+        curr_features = np.loadtxt(curr_file, dtype=np.int32)
+        curr_features = tf.convert_to_tensor(curr_features)
+        if img_tensor is None:
+            img_tensor = curr_features
+        else:
+            img_tensor = tf.concat(img_tensor, curr_features)
+
+    print("Image features loaded.")
 
     # img_features = np.vstack(features)
     print("Preprocessing complete (๑ `▽´๑)")
-    return questions, labels, img_features
+    return questions, labels, img_tensor

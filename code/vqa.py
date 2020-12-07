@@ -28,14 +28,15 @@ class VQA(tf.keras.Model):
 
         # Trainable parameters
         self.img_ff_layer = Dense(self.hidden_size)
-        self.lstm_hidden = LSTM(self.rnn_size, return_sequence=True, return_state=True)
+        self.lstm_hidden = LSTM(
+            self.rnn_size, return_sequence=True, return_state=True)
         self.lstm = LSTM(self.rnn_size, return_state=True)
         self.txt_ff_layer = Dense(self.hidden_size, activation='tanh')
 
         # Fuse/Merge Layers
         self.merge_layer1 = Dense(self.merge_hidden_size, activation='relu')
         self.merge_layer2 = Dense(self.vocab_size)
-    
+
     def call(self, img_feats, ques_inputs):
         """
         Runs a forward pass on image and question tensors
@@ -45,20 +46,26 @@ class VQA(tf.keras.Model):
         """
         # Image part
         # L2-normalizing the image tensor TODO: check if axis=1
-        normalized_img_feats = tf.math.l2_normalize(img_feats, axis=1, epsilon=1e-12, name=None)
+        normalized_img_feats = tf.math.l2_normalize(
+            img_feats, axis=1, epsilon=1e-12, name=None)
         img_output = self.img_ff_layer(normalized_img_feats)
-        
+
         # LSTM part
         window_size = max([len(q.split()) for q in ques_inputs])
-        embeddings = np.zeros((self.batch_size, window_size, self.embedding_size))
+        embeddings = np.zeros(
+            (self.batch_size, window_size, self.embedding_size))
         for i in range(ques_inputs):
             doc = self.nlp(ques_inputs[i])
-            for t in len(doc):
+            for t in range(len(doc)):
                 if t < window_size:
-                    embeddings[i, t, :] = np.reshape(doc[t].vector, [1, self.embedding_size])
-        hidden_output, hidden_memory_state, hidden_carry_state = self.lstm_hidden(embeddings, initial_state=None)
-        _, final_memory_state, final_carry_state = self.lstm(hidden_output, initial_state=(hidden_memory_state, hidden_carry_state))
-        txt_output = self.txt_ff_layer(tf.concat([final_memory_state, final_carry_state], 1))
+                    embeddings[i, t, :] = np.reshape(
+                        doc[t].vector, [1, self.embedding_size])
+        hidden_output, hidden_memory_state, hidden_carry_state = self.lstm_hidden(
+            embeddings, initial_state=None)
+        _, final_memory_state, final_carry_state = self.lstm(
+            hidden_output, initial_state=(hidden_memory_state, hidden_carry_state))
+        txt_output = self.txt_ff_layer(
+            tf.concat([final_memory_state, final_carry_state], 1))
 
         # Fusing
         fused = tf.multiply(img_output, txt_output)
@@ -67,14 +74,16 @@ class VQA(tf.keras.Model):
         probabilities = tf.nn.softmax(logits)
 
         return probabilities
-        
+
     def loss_function(self, probabilities, labels):
         """
         Computes the cross-entropy loss given y_true (labels) and y_pred (probabilities)
         :return: the average loss across a batch of inputs
         """
-        losses = tf.keras.losses.sparse_categorical_crossentropy(labels, probabilities)
+        losses = tf.keras.losses.sparse_categorical_crossentropy(
+            labels, probabilities)
         return tf.reduce_mean(losses)
+
 
 def train(model, img_feats, ques_inputs, labels):
     """
@@ -84,7 +93,7 @@ def train(model, img_feats, ques_inputs, labels):
     :returns: a list of losses of all batches
     """
     # Shuffling
-    indices =  [i for i in range(len(ques_inputs))]
+    indices = [i for i in range(len(img_feats))]  # TEST
     indices = tf.random.shuffle(indices)
     img_feats = tf.gather(img_feats, indices, axis=0)
     shuffled_questions = []
@@ -97,20 +106,22 @@ def train(model, img_feats, ques_inputs, labels):
     bsz = model.batch_size
     input_size = img_feats.shape[0]
     losses = []
-    for i in range(0,input_size, bsz):
-        batch_imgs = img_feats[i:(i+bsz),:]
+    for i in range(0, input_size, bsz):
+        batch_imgs = img_feats[i:(i+bsz), :]
         batch_questions = shuffled_questions[i:(i+bsz)]
         batch_labels = shuffled_labels[i:(i+bsz)]
 
         with tf.GradientTape() as tape:
             probs = model.call(batch_imgs, batch_questions)
             batch_loss = model.loss_function(probs, batch_labels)
-        
+
         gradients = tape.gradient(batch_loss, model.trainable_variables)
-        model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        model.optimizer.apply_gradients(
+            zip(gradients, model.trainable_variables))
         losses.append(batch_loss)
-    
+
     return losses
+
 
 def validate(model, img_inputs, ques_inputs, labels):
     """
@@ -123,6 +134,7 @@ def validate(model, img_inputs, ques_inputs, labels):
     loss = model.loss_function(probs, labels)
     return loss
 
+
 def loss_visualization(losses):
     """
     :param losses: A list of losses across batches
@@ -134,6 +146,7 @@ def loss_visualization(losses):
     plt.ylabel('Loss')
     plt.show()
 
+
 def run(img_flag):
     fpath_train_anno = "../data/annotations/mscoco_train2014_annotations.json"
     fpath_train_q_mc = "../data/questions/MultipleChoice_mscoco_train2014_questions.json"
@@ -141,7 +154,7 @@ def run(img_flag):
 
     with open(fpath_train_anno, 'r') as f:
         train_annotations_raw = json.load(f)
-    
+
     train_annotations = train_annotations_raw['annotations']
     vocab = build_answer_vocab(train_annotations)
 
@@ -149,10 +162,11 @@ def run(img_flag):
     fpath_val_q_mc = "../data/questions/MultipleChoice_mscoco_val2014_questions.json"
     fpath_val_img_dir = "../data/val2014/"
 
-    # annotations_mc, questions_mc = preprocess.load_text(fpath_anno, fpath_q_mc)
-    questions_train, labels_train, img_features_train = preprocess(fpath_train_anno,fpath_train_q_mc,img_flag,vocab,dir_path_image=fpath_train_img_dir,category=0) 
-    questions_val, labels_val, img_features_val = preprocess(fpath_val_anno,fpath_val_q_mc,img_flag,fpath_val_img_dir,vocab,category=2)    
-    
+    questions_train, labels_train, img_features_train = preprocess(
+        fpath_train_anno, fpath_train_q_mc, img_flag, vocab, dir_path_image=fpath_train_img_dir, category=0)
+    questions_val, labels_val, img_features_val = preprocess(
+        fpath_val_anno, fpath_val_q_mc, img_flag, fpath_val_img_dir, vocab, category=2)
+
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
     losses = train(vqa_mc, img_features_train, questions_train, labels_train)
@@ -167,7 +181,8 @@ def run(img_flag):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VQA Model")
-    parser.add_argument("-i","--img",action='store_true', help="",default="")
+    parser.add_argument("-i", "--img", action='store_true',
+                        help="", default="")
     args = vars(parser.parse_args())
 
     if args["img"]:
