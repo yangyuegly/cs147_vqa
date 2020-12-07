@@ -14,7 +14,7 @@ class VQA(tf.keras.Model):
         # self.annotations = annotations
         # self.questions = questions
         # self.answers = None
-
+        super(VQA, self).__init__()
         # Hyperparameters
         self.batch_size = 16
         self.hidden_size = 1024
@@ -22,14 +22,14 @@ class VQA(tf.keras.Model):
         self.merge_hidden_size = 1000
         self.embedding_size = 300
         self.vocab_size = vocab_size
-        self.nlp = spacy.load("en_core_web_md")
+        self.nlp = spacy.load("en_core_web_sm")
         self.learning_rate = 1e-3
         self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
 
         # Trainable parameters
         self.img_ff_layer = Dense(self.hidden_size)
         self.lstm_hidden = LSTM(
-            self.rnn_size, return_sequence=True, return_state=True)
+            self.rnn_size, return_sequences=True, return_state=True)
         self.lstm = LSTM(self.rnn_size, return_state=True)
         self.txt_ff_layer = Dense(self.hidden_size, activation='tanh')
 
@@ -45,9 +45,10 @@ class VQA(tf.keras.Model):
         :return: probabilities
         """
         # Image part
+        print("image feats: ", img_feats.shape)
         # L2-normalizing the image tensor TODO: check if axis=1
         normalized_img_feats = tf.math.l2_normalize(
-            img_feats, axis=1, epsilon=1e-12, name=None)
+            img_feats, axis=1)
         img_output = self.img_ff_layer(normalized_img_feats)
 
         # LSTM part
@@ -164,13 +165,13 @@ def run(img_flag):
 
     questions_train, labels_train, img_features_train = preprocess(
         fpath_train_anno, fpath_train_q_mc, img_flag, vocab, dir_path_image=fpath_train_img_dir, category=0)
-    questions_val, labels_val, img_features_val = preprocess(
-        fpath_val_anno, fpath_val_q_mc, img_flag, fpath_val_img_dir, vocab, category=2)
+    # questions_val, labels_val, img_features_val = preprocess(
+    #     fpath_val_anno, fpath_val_q_mc, img_flag, fpath_val_img_dir, vocab, category=2)
 
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
     losses = train(vqa_mc, img_features_train, questions_train, labels_train)
-    validate(vqa_mc, img_features_val, questions_val, labels_val)
+    # validate(vqa_mc, img_features_val, questions_val, labels_val)
     loss_visualization(losses)
 
     # Save Model
