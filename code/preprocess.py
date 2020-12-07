@@ -116,7 +116,7 @@ def extract_image_features(model, images):
 
 
 def save_image(features, category):
-    filename = open('weights_features/image_features_' + category + '.txt')
+    filename = open('../weights_features/image_features_' + category + '.txt')
     np.savetxt(filename, features, fmt='%d')
 
 
@@ -131,7 +131,7 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
         save_image(img_features, category)
         print("Image features saved.")
     else:
-        img_features = np.loadtxt('weights_features/image_features_' + category + '.txt', dtype=np.int32)
+        img_features = np.loadtxt('../weights_features/image_features_' + category + '.txt', dtype=np.int32)
         print("Image features loaded.")
 
     print("Preprocessing complete (๑ `▽´๑)")
