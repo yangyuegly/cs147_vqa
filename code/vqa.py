@@ -27,14 +27,16 @@ class VQA(tf.keras.Model):
         self.optimizer = tf.keras.optimizers.Adam(self.learning_rate)
 
         # Trainable parameters
-        self.img_ff_layer = Dense(self.hidden_size)
+        self.img_ff_layer = Dense(
+            self.hidden_size, kernel_initializer='uniform')
         self.lstm_hidden = LSTM(
             self.rnn_size, return_sequences=True, return_state=True)
         self.lstm = LSTM(self.rnn_size, return_state=True)
         self.txt_ff_layer = Dense(self.hidden_size, activation='tanh')
 
         # Fuse/Merge Layers
-        self.merge_layer1 = Dense(self.merge_hidden_size, activation='relu')
+        self.merge_layer1 = Dense(
+            self.merge_hidden_size, kernel_initializer='uniform', activation='relu')
         self.merge_layer2 = Dense(self.vocab_size)
 
     def call(self, img_feats, ques_inputs):
