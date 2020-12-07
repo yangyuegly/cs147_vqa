@@ -153,7 +153,8 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, vocab, dir_path_image=None, cat
         if img_tensor is None:
             img_tensor = curr_features
         else:
-            img_tensor = tf.concat(img_tensor, curr_features)
+            print("image tensor", img_tensor.shape)
+            img_tensor = tf.concat([img_tensor, curr_features], 0)
 
     print("Image features loaded.")
 
