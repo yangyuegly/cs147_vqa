@@ -16,7 +16,7 @@ class VQA(tf.keras.Model):
         # self.answers = None
 
         # Hyperparameters
-        self.batch_size = 128
+        self.batch_size = 16
         self.hidden_size = 1024
         self.rnn_size = 512
         self.merge_hidden_size = 1000
