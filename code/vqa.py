@@ -124,6 +124,9 @@ def train(model, img_feats, ques_inputs, labels):
             zip(gradients, model.trainable_variables))
         losses.append(batch_loss)
 
+        # Save Model
+        model.save_weights('./model_weights.h5',overwrite=True)
+
     return losses
 
 
@@ -174,14 +177,15 @@ def run(img_flag):
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
     losses = train(vqa_mc, img_features_train, questions_train, labels_train)
-    # validate(vqa_mc, img_features_val, questions_val, labels_val)
+    
     loss_visualization(losses)
 
     # Save Model
-    vqa_mc.save('./model')
+    vqa_mc.save_weights('./model_weights.h5',overwrite=True)
     # loaded_model = tf.keras.models.load_model('/tmp/model')
-    print("Saved model to disk")
+    print("Saved model weights to disk")
 
+    # validate(vqa_mc, img_features_val, questions_val, labels_val)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VQA Model")
