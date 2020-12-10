@@ -16,7 +16,7 @@ class VQA(tf.keras.Model):
         # self.answers = None
         super(VQA, self).__init__()
         # Hyperparameters
-        self.batch_size = 16
+        self.batch_size = 32
         self.hidden_size = 1024
         self.rnn_size = 512
         self.merge_hidden_size = 1000
@@ -44,7 +44,7 @@ class VQA(tf.keras.Model):
         Runs a forward pass on image and question tensors
         :param img_inputs: tensor of image features with shape [batch_size x 4096]
         :param ques_inputs: a list of strings with length [batch_size]
-        :return: probabilities
+        :return: probabilities [batch_size x vocab_size]
         """
         # Image part
         print("image feats: ", img_feats.shape)
@@ -87,6 +87,17 @@ class VQA(tf.keras.Model):
         losses = tf.keras.losses.sparse_categorical_crossentropy(
             labels, probabilities)
         return tf.reduce_mean(losses)
+    
+    def accuracy_function(self, probabilities, labels):
+        """
+        Computes the accuracy by comparing probabilities to correct labels
+        :param probabilities: probabilities with size [mll; x vocab_size]
+        :param labels: one-hot [batch_size x vocab_size] 
+        :return: the accuracy
+        """
+        labels = tf.one_hot(labels, depth=self.vocab_size)
+        correct_predictions = tf.equal(tf.argmax(probabilities, 1), tf.argmax(labels, 1))
+        return tf.reduce_mean(tf.cast(correct_predictions, tf.float32))
 
 
 def train(model, img_feats, ques_inputs, labels):
@@ -110,10 +121,11 @@ def train(model, img_feats, ques_inputs, labels):
     bsz = model.batch_size
     input_size = img_feats.shape[0]
     losses = []
-    for i in range(0, input_size, bsz):
-        batch_imgs = img_feats[i:(i+bsz), :]
-        batch_questions = shuffled_questions[i:(i+bsz)]
-        batch_labels = shuffled_labels[i:(i+bsz)]
+    num_iteration = input_size // bsz
+    for i in range(num_iteration):
+        batch_imgs = img_feats[i*bsz:(i+1)*bsz, :]
+        batch_questions = shuffled_questions[i*bsz:(i+1)*bsz]
+        batch_labels = shuffled_labels[i*bsz:(i+1)*bsz]
 
         with tf.GradientTape() as tape:
             probs = model.call(batch_imgs, batch_questions)
@@ -123,6 +135,9 @@ def train(model, img_feats, ques_inputs, labels):
         model.optimizer.apply_gradients(
             zip(gradients, model.trainable_variables))
         losses.append(batch_loss)
+
+        # Save Model
+        model.save_weights('./model_weights.h5',overwrite=True)
 
     return losses
 
@@ -174,14 +189,15 @@ def run(img_flag):
     vocab_size = len(vocab)
     vqa_mc = VQA(vocab_size)
     losses = train(vqa_mc, img_features_train, questions_train, labels_train)
-    # validate(vqa_mc, img_features_val, questions_val, labels_val)
+    
     loss_visualization(losses)
 
     # Save Model
-    vqa_mc.save('./model')
+    vqa_mc.save_weights('./model_weights.h5',overwrite=True)
     # loaded_model = tf.keras.models.load_model('/tmp/model')
-    print("Saved model to disk")
+    print("Saved model weights to disk")
 
+    # validate(vqa_mc, img_features_val, questions_val, labels_val)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VQA Model")
