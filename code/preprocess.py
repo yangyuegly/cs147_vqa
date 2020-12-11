@@ -8,20 +8,6 @@ from tensorflow.keras import Model
 BATCH_SIZE = 5
 SAVING_LENGTH = 5000
 
-
-# def build_answer_vocab(annotations):
-#     """
-#     Builds a vocab
-#     :param: annotations for the training set
-#     """
-#     all_words = []
-#     for question in annotations:
-#         all_words.append(question["multiple_choice_answer"])
-#     all_words = sorted(set(all_words))
-#     vocab = {word: i for i, word in enumerate(all_words)}
-#     return vocab
-
-
 def load_text(fpath_anno, fpath_q_mc):
     with open(fpath_anno, 'r') as f1:
         annotations_raw = json.load(f1)
@@ -144,11 +130,10 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, dir_path_image=None, category=N
             batch_img_features = preprocess_img(
                 dir_path_image, batch_image_id_list, category=category)
             save_image(batch_img_features, category, iteration)
-            # features.append(batch_img_features)
             print("Image features saved for iteration ", iteration)
             iteration += 1
 
-    for batch in range(10):
+    for batch in range(20 if category==0 else 2):
         curr_file = '../weights_features/image_features_' + \
             str(category) + '_' + str(batch) + '.txt'
         curr_features = np.loadtxt(curr_file, dtype=np.int32)
@@ -156,11 +141,8 @@ def preprocess(fpath_anno, fpath_q_mc, img_flag, dir_path_image=None, category=N
         if img_tensor is None:
             img_tensor = curr_features
         else:
-            print("image tensor", img_tensor.shape)
             img_tensor = tf.concat([img_tensor, curr_features], 0)
 
     print("Image features loaded.")
-
-    # img_features = np.vstack(features)
     print("Preprocessing complete (๑ `▽´๑)")
     return questions, labels, img_tensor, question_choices
