@@ -1,6 +1,8 @@
 # cs147_vqa
 VQA project for CS147
 
+This repository aims to tackle visual question answering tasks. Current function is limited to multiple choice questions.
+
 How to run our model:
   1. Run with image preprocessing:
      If this is your first time running our model, then you may not have images extracted as features. In this case, you may want to train the model while extracting image features using the VGG-19 network pre-trained on ImageNet.
